@@ -220,7 +220,8 @@
         }else if([@"image" isEqualToString:type]){
             NSData *decodeData = [[NSData alloc] initWithBase64EncodedString:content options:0];
             UIImage *image = [UIImage imageWithData:decodeData];
-            [command addOriginrastBitImage:image width:width];
+            int intValue = [width intValue];
+            [command addOriginrastBitImage:image width:intValue];
         }
         
         if([linefeed isEqualToNumber:@1]){
