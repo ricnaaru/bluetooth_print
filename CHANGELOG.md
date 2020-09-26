@@ -1,7 +1,3 @@
-## 2.0.0
-
-* adaptation flutter 1.23.13.
-
 ## 1.2.0
 
 * fix ios library auto import bug.
@@ -51,5 +47,3 @@
 ## 0.0.1
 
 * initial release.
-* TODO: Describe initial release.
-

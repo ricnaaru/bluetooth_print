@@ -5,14 +5,7 @@
 
 BluetoothPrint is a bluetooth plugin for [Flutter](http://www.flutter.io), a new mobile SDK to help developers build bluetooth thermal printer apps for both iOS and Android.(for example, Gprinter pt-280、pt-380、gp-1324、gp-2120 eg.)
 
-### Underway(please suggest)
-[ ] print x,y positions  
-[ ] set paper size  
-[ ] more print examples
 
-### verison
-2.0.0（flutter 1.12）       
-1.2.0（flutter 1.9） 
 
 ## Features
 
@@ -95,7 +88,6 @@ await bluetoothPrint.disconnect();
 ```dart
       bluetoothPrint.state.listen((state) {
       print('cur device status: $state');
-# bluetooth_print
 
       switch (state) {
         case BluetoothPrint.CONNECTED:
@@ -113,7 +105,6 @@ await bluetoothPrint.disconnect();
       }
     });
 ```
-A new flutter plugin project.
 
 ### print (esc command, receipt mode)
 ```dart
@@ -127,22 +118,14 @@ A new flutter plugin project.
     list.add(LineText(linefeed: 1));
     list.add(LineText(type: LineText.TYPE_QRCODE, content: 'qrcode i', size:10, align: LineText.ALIGN_CENTER, linefeed: 1));
     list.add(LineText(linefeed: 1));
-## Getting Started
 
     ByteData data = await rootBundle.load("assets/images/guide3.png");
     List<int> imageBytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
     String base64Image = base64Encode(imageBytes);
     list.add(LineText(type: LineText.TYPE_IMAGE, content: base64Image, align: LineText.ALIGN_CENTER, linefeed: 1));
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
 
     await bluetoothPrint.printReceipt(config, list);
 ```
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
 
 ### print (tsc command, label mode)
 ```dart
@@ -178,6 +161,7 @@ samples, guidance on mobile development, and a full API reference.
 s.vendored_libraries = '**/*.a'
 ```
 
+
 #### error:'State restoration of CBCentralManager is only allowed for applications that have specified the "bluetooth-central" background mode'    
 info.plist add:
 ```
@@ -191,10 +175,6 @@ info.plist add:
     <string>bluetooth-peripheral</string>
 </array>
 ```
-
-## FAQ Support
-you can join this [QQ](https://im.qq.com/index.shtml) group, feedback your problem  
-<img src="assets/bluetooth_print.png">
 
 ## Thanks For
 - [flutter_blue](https://github.com/pauldemarco/flutter_blue)

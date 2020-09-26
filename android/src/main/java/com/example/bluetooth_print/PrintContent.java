@@ -72,7 +72,7 @@ public class PrintContent {
                   }else if("image".equals(type)){
                         byte[] bytes = Base64.decode(content, Base64.DEFAULT);
                         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                        esc.addRastBitImage(bitmap, 576, 0);
+                        esc.addRastBitImage(bitmap, width, 0);
                   }
 
                   if(linefeed == 1){
@@ -170,17 +170,6 @@ public class PrintContent {
 
             Vector<Byte> datas = cpcl.getCommand();
             return datas;
-      }
-
-      public static byte[] convertVectorByteToBytes(Vector<Byte> data) {
-            byte[] sendData = new byte[data.size()];
-            if (data.size() > 0) {
-                  for(int i = 0; i < data.size(); ++i) {
-                        sendData[i] = (Byte)data.get(i);
-                  }
-            }
-
-            return sendData;
       }
 
 }

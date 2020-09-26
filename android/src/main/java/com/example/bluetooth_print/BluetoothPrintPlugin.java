@@ -14,17 +14,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Handler;
-import android.os.Message;
-import android.os.StrictMode;
 import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.gprinter.command.FactoryCommand;
-import com.qs.helper.printer.Device;
-import com.qs.helper.printer.PrintService;
-import com.qs.helper.printer.PrinterClass;
-import com.qs.helper.printer.bt.BtService;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.EventChannel.EventSink;
 import io.flutter.plugin.common.EventChannel.StreamHandler;
@@ -54,16 +47,6 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
   private final BluetoothManager mBluetoothManager;
   private BluetoothAdapter mBluetoothAdapter;
 
-  // 打印机操作类
-  public static PrinterClass pl = null;
-  public static final int MESSAGE_STATE_CHANGE = 1;
-  public static final int MESSAGE_READ = 2;
-  public static final int MESSAGE_WRITE = 3;
-  public static final int MESSAGE_DEVICE_NAME = 4;
-  public static final int MESSAGE_TOAST = 5;
-  Handler mhandler = null;
-  Handler handler = null;
-
   private MethodCall pendingCall;
   private Result pendingResult;
 
@@ -73,89 +56,6 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
   }
 
   BluetoothPrintPlugin(Registrar r){
-    // 调用严苛模式
-    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-    StrictMode.setThreadPolicy(policy);
-
-    mhandler = new Handler() {
-      public void handleMessage(Message msg) {
-        switch (msg.what) {
-          case MESSAGE_READ:
-            byte[] readBuf = (byte[]) msg.obj;
-            Log.e(TAG, "readBuf:" + readBuf[0]);
-            if (readBuf[0] == 0x13) {
-              PrintService.isFUll = true;
-
-            } else if (readBuf[0] == 0x11) {
-              PrintService.isFUll = false;
-
-            } else if (readBuf[0] == 0x08) {
-
-            } else if (readBuf[0] == 0x01) {
-
-            }  else if (readBuf[0] == 0x04) {
-
-            } else if (readBuf[0] == 0x02) {
-
-            }else {
-              String readMessage = new String(readBuf, 0, msg.arg1);
-              Log.e("", "readMessage"+readMessage);
-              if (readMessage.contains("800"))// 80mm paper
-              {
-                PrintService.imageWidth = 72;
-
-                Log.e(TAG, "imageWidth:"+"80mm");
-              } else if (readMessage.contains("580")) {
-                // 58mm paper
-                PrintService.imageWidth = 48;
-                Log.e("", "imageWidth:"+"58mm");
-              }
-            }
-            break;
-          case MESSAGE_STATE_CHANGE:// 蓝牙连接状态
-            switch (msg.arg1) {
-              case PrinterClass.STATE_CONNECTED:// 已经连接
-                break;
-              case PrinterClass.STATE_CONNECTING:// 正在连接
-                break;
-              case PrinterClass.STATE_LISTEN:
-              case PrinterClass.STATE_NONE:
-                break;
-              case PrinterClass.SUCCESS_CONNECT://连接成功
-                pl.write(new byte[] { 0x1b, 0x2b });// 检测打印机型号
-                break;
-              case PrinterClass.FAILED_CONNECT://连接失败
-                break;
-              case PrinterClass.LOSE_CONNECT://连接丢失
-            }
-            break;
-          case MESSAGE_WRITE:
-
-            break;
-        }
-        super.handleMessage(msg);
-      }
-    };
-
-    handler = new Handler() {
-      @Override
-      public void handleMessage(Message msg) {
-        super.handleMessage(msg);
-        switch (msg.what) {
-          case 0:
-            break;
-          case 1:// 获取蓝牙端口号
-            Device d = (Device) msg.obj;
-            if (d != null) {
-
-            }
-            break;
-          case 2:
-            break;
-        }
-      }
-    };
-
     this.registrar = r;
     this.activity = r.activity();
     this.channel = new MethodChannel(registrar.messenger(), NAMESPACE + "/methods");
@@ -164,7 +64,6 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
     this.mBluetoothAdapter = mBluetoothManager.getAdapter();
     channel.setMethodCallHandler(this);
     stateChannel.setStreamHandler(stateStreamHandler);
-    this.pl = new BtService(this.activity.getApplication().getBaseContext(), mhandler, handler);
   }
 
   @Override
@@ -317,9 +216,7 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
 
   private void startScan() throws IllegalStateException {
     BluetoothLeScanner scanner = mBluetoothAdapter.getBluetoothLeScanner();
-    if(scanner == null) {
-      throw new IllegalStateException("getBluetoothLeScanner() is null. Is the Adapter on?");
-    }
+    if(scanner == null) throw new IllegalStateException("getBluetoothLeScanner() is null. Is the Adapter on?");
 
     // 0:lowPower 1:balanced 2:lowLatency -1:opportunistic
     ScanSettings settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
@@ -328,9 +225,7 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
 
   private void stopScan() {
     BluetoothLeScanner scanner = mBluetoothAdapter.getBluetoothLeScanner();
-    if(scanner != null) {
-      scanner.stopScan(mScanCallback);
-    }
+    if(scanner != null) scanner.stopScan(mScanCallback);
   }
 
   /**
@@ -338,13 +233,24 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
    */
   private void connect(Result result, Map<String, Object> args){
     if (args.containsKey("address")) {
-      stopScan();
-
       String address = (String) args.get("address");
-      Log.d(TAG,"start connect " + address);
-
       disconnect();
-      pl.connect(address);
+
+      new DeviceConnFactoryManager.Build()
+              .setId(id)
+              //设置连接方式
+              .setConnMethod(DeviceConnFactoryManager.CONN_METHOD.BLUETOOTH)
+              //设置连接的蓝牙mac地址
+              .setMacAddress(address)
+              .build();
+      //打开端口
+      threadPool = ThreadPool.getInstantiation();
+      threadPool.addSerialTask(new Runnable() {
+        @Override
+        public void run() {
+          DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].openPort();
+        }
+      });
 
       result.success(true);
     } else {
@@ -357,8 +263,12 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
    * 重新连接回收上次连接的对象，避免内存泄漏
    */
   private boolean disconnect(){
-    pl.disconnect();
 
+    if(DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id]!=null&&DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].mPort!=null) {
+      DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].reader.cancel();
+      DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].mPort.closePort();
+      DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].mPort=null;
+    }
     return true;
   }
 
@@ -396,6 +306,11 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
 
   @SuppressWarnings("unchecked")
   private void print(Result result, Map<String, Object> args) {
+    if (DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id] == null ||
+            !DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].getConnState()) {
+
+      result.error("not connect", "state not right", null);
+    }
 
     if (args.containsKey("config") && args.containsKey("data")) {
       final Map<String,Object> config = (Map<String,Object>)args.get("config");
@@ -404,11 +319,19 @@ public class BluetoothPrintPlugin implements MethodCallHandler, RequestPermissio
         return;
       }
 
-      Log.d(TAG, "print esc begin");
-
-//      pl.write(PrintContent.convertVectorByteToBytes(PrintContent.mapToReceipt(config, list)));
-      pl.printText("test 你好 \n");
-      pl.write(new byte[] {  0x0c });
+      threadPool = ThreadPool.getInstantiation();
+      threadPool.addSerialTask(new Runnable() {
+        @Override
+        public void run() {
+          if (DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].getCurrentPrinterCommand() == PrinterCommand.ESC) {
+            DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].sendDataImmediately(PrintContent.mapToReceipt(config, list));
+          }else if (DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].getCurrentPrinterCommand() == PrinterCommand.TSC) {
+            DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].sendDataImmediately(PrintContent.mapToLabel(config, list));
+          }else if (DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].getCurrentPrinterCommand() == PrinterCommand.CPCL) {
+            DeviceConnFactoryManager.getDeviceConnFactoryManagers()[id].sendDataImmediately(PrintContent.mapToCPCL(config, list));
+          }
+        }
+      });
     }else{
       result.error("please add config or data", "", null);
     }

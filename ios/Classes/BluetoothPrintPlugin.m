@@ -2,6 +2,7 @@
 #import "ConnecterManager.h"
 #import "EscCommand.h"
 #import "TscCommand.h"
+#import <ExternalAccessory/ExternalAccessory.h>
 
 @interface BluetoothPrintPlugin ()
 @property(nonatomic, retain) NSObject<FlutterPluginRegistrar> *registrar;
@@ -38,8 +39,10 @@
     
     result(@(YES));
   } else if([@"isConnected" isEqualToString:call.method]) {
-    
-    result(@(NO));
+     BOOL myBool = Manager.bleConnecter.connPeripheral != nil;
+      NSLog(@"myBool -> %d", Manager.bleConnecter.connPeripheral != nil);
+     NSLog(@"Manager.bleConnecter.connPeripheral -> %@", Manager.bleConnecter.connPeripheral.name);
+    result(@(myBool));
   } else if([@"isOn" isEqualToString:call.method]) {
     result(@(YES));
   }else if([@"startScan" isEqualToString:call.method]) {
@@ -217,7 +220,7 @@
         }else if([@"image" isEqualToString:type]){
             NSData *decodeData = [[NSData alloc] initWithBase64EncodedString:content options:0];
             UIImage *image = [UIImage imageWithData:decodeData];
-            [command addOriginrastBitImage:image width:576];
+            [command addOriginrastBitImage:image width:width];
         }
         
         if([linefeed isEqualToNumber:@1]){

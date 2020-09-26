@@ -148,37 +148,41 @@ public class DeviceConnFactoryManager {
      * @return
      */
     public void openPort() {
-        deviceConnFactoryManagers[id].isOpenPort = false;
+        try {
+            deviceConnFactoryManagers[id].isOpenPort = false;
 
-        switch (deviceConnFactoryManagers[id].connMethod) {
-            case BLUETOOTH:
-                mPort = new BluetoothPort(macAddress);
-                isOpenPort = deviceConnFactoryManagers[id].mPort.openPort();
-                break;
-            case USB:
-                mPort = new UsbPort(mContext, mUsbDevice);
-                isOpenPort = mPort.openPort();
-                break;
-            case WIFI:
-                mPort = new EthernetPort(ip, port);
-                isOpenPort = mPort.openPort();
-                break;
-            case SERIAL_PORT:
-                mPort = new SerialPort(serialPortPath, baudrate, 0);
-                isOpenPort = mPort.openPort();
-                break;
-            default:
-                break;
-        }
-
-        //端口打开成功后，检查连接打印机所使用的打印机指令ESC、TSC
-        if (isOpenPort) {
-            queryCommand();
-        } else {
-            if (this.mPort != null) {
-                this.mPort=null;
+            switch (deviceConnFactoryManagers[id].connMethod) {
+                case BLUETOOTH:
+                    mPort = new BluetoothPort(macAddress);
+                    isOpenPort = deviceConnFactoryManagers[id].mPort.openPort();
+                    break;
+                case USB:
+                    mPort = new UsbPort(mContext, mUsbDevice);
+                    isOpenPort = mPort.openPort();
+                    break;
+                case WIFI:
+                    mPort = new EthernetPort(ip, port);
+                    isOpenPort = mPort.openPort();
+                    break;
+                case SERIAL_PORT:
+                    mPort = new SerialPort(serialPortPath, baudrate, 0);
+                    isOpenPort = mPort.openPort();
+                    break;
+                default:
+                    break;
             }
 
+            //端口打开成功后，检查连接打印机所使用的打印机指令ESC、TSC
+            if (isOpenPort) {
+                queryCommand();
+            } else {
+                if (this.mPort != null) {
+                    this.mPort=null;
+                }
+
+            }
+        } catch (Exception e) {
+            Log.d("ricric", "e => " + e.getMessage());
         }
     }
 
